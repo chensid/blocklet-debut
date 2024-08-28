@@ -2,9 +2,17 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ReloadIcon } from '@radix-ui/react-icons';
+import { useMutation } from '@tanstack/react-query';
+import sha256 from 'crypto-js/sha256';
+import { nanoid } from 'nanoid';
 import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
+
+import { usePouchDB } from '../hooks/use-pouch-db';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -20,15 +28,52 @@ const defaultValues = {
 };
 
 function Login() {
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const db = usePouchDB();
+  const { mutate, isPending } = useMutation({
+    mutationFn: async (data) => {
+      // find user by email
+      const res = await db.find({ selector: { type: 'user', email: data.email } });
+      if (res.docs.length < 1) {
+        throw new Error('user not exist');
+      }
+      const user = res.docs[0];
+      // check password
+      if (user.password !== data.password) {
+        throw new Error('email or password is incorrect');
+      }
+      // fake token
+      const token = nanoid();
+      // remove password
+      const { password, ...returnUser } = user;
+      // return user and token
+      return { user: returnUser, token };
+    },
+    onSuccess: (result) => {
+      // save token to localStorage
+      const { user, token } = result;
+      sessionStorage.setItem('token', token);
+      sessionStorage.setItem('user', JSON.stringify(user));
+      // navigate to home page
+      navigate('/', { replace: true });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Login failed',
+        description: String(error),
+        variant: 'destructive',
+      });
+    },
+  });
+
   const form = useForm({
     defaultValues,
     resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = (data) => {
-    setTimeout(() => {
-      console.warn(data);
-    }, 1000);
+    mutate({ ...data, password: sha256(data.password).toString() });
   };
   return (
     <div className="bg-background w-full h-screen flex items-center justify-center px-4">
@@ -68,7 +113,8 @@ function Login() {
           </Form>
         </CardContent>
         <CardFooter>
-          <Button type="submit" className="w-full" onClick={form.handleSubmit(onSubmit)}>
+          <Button type="submit" className="w-full" disabled={isPending} onClick={form.handleSubmit(onSubmit)}>
+            {isPending && <ReloadIcon className="mr-2 h-4 w-4 animate-spin" />}
             Sign in
           </Button>
         </CardFooter>

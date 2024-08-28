@@ -12,6 +12,9 @@ module.exports = {
       },
     },
   },
+  rules: {
+    'react/prop-types': 'off',
+  },
   // shadcn/ui
   ignorePatterns: ['src/components/ui/**', 'src/lib/**'],
 };

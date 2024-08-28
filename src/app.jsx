@@ -1,28 +1,31 @@
-import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Toaster } from '@/components/ui/toaster';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createBrowserRouter } from 'react-router-dom';
 
-import Layout from './layouts/layout';
-import Home from './pages/home';
-import Login from './pages/login';
+import { PouchDBProvider } from './hooks/use-pouch-db';
+import routes from './routes';
+
+// Create a query client
+const queryClient = new QueryClient();
 
 function App() {
-  return (
-    <Routes>
-      <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Route>
-      <Route path="login" element={<Login />} />
-    </Routes>
-  );
-}
-
-export default function WrappedApp() {
   // While the blocklet is deploy to a sub path, this will be work properly.
   const basename = window?.blocklet?.prefix || '/';
 
   return (
-    <Router basename={basename}>
-      <App />
-    </Router>
+    <>
+      <RouterProvider router={createBrowserRouter(routes, { basename })} />
+      <Toaster />
+    </>
+  );
+}
+
+export default function WrappedApp() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <PouchDBProvider>
+        <App />
+      </PouchDBProvider>
+    </QueryClientProvider>
   );
 }

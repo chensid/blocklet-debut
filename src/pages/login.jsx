@@ -55,6 +55,10 @@ function Login() {
       const { user, token } = result;
       sessionStorage.setItem('token', token);
       sessionStorage.setItem('user', JSON.stringify(user));
+      toast({
+        title: 'Login successful',
+        description: 'You are now logged in.',
+      });
       // navigate to home page
       navigate('/', { replace: true });
     },

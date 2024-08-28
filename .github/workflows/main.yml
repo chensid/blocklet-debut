@@ -23,6 +23,9 @@ jobs:
         with:
           node-version: '20'
           cache: 'pnpm'
+          
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Blocklet workflow
         uses: blocklet/action-workflow@v1

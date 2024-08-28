@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 function Home() {
   const date = dayjs().format('MMMM D, YYYY');
   return (
-    <div className="h-full flex-col space-y-8 p-8 md:flex">
+    <div className="h-full flex-col space-y-8 p-4 md:p-8 md:flex overflow-scroll">
       <div className="flex justify-between items-center space-y-2">
         <div>
           <h3 className="text-2xl font-bold tracking-tight">Welcome back!</h3>

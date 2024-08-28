@@ -1,15 +1,16 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Navigate, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
+import Layout from './layouts/layout';
 import Home from './pages/home';
 
 function App() {
   return (
-    <div className="app">
-      <Routes>
-        <Route path="/" element={<Home />} />
+    <Routes>
+      <Route path="/" element={<Layout />}>
+        <Route index element={<Home />} />
         <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </div>
+      </Route>
+    </Routes>
   );
 }
 

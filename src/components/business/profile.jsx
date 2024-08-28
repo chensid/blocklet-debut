@@ -4,10 +4,14 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { memo, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
+
+import { usePouchDB } from '../../hooks/use-pouch-db';
 
 const profileSchema = z.object({
   email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
@@ -33,14 +37,51 @@ const defaultProfile = {
   bio: '',
 };
 
-function Profile() {
+const Profile = memo(({ profile }) => {
+  const { toast } = useToast();
   const [isEdit, setIsEdit] = useState(false);
+  const db = usePouchDB();
   const form = useForm({
-    defaultValues: defaultProfile,
+    defaultValues: profile || defaultProfile,
     resolver: zodResolver(profileSchema),
   });
+  const { mutate } = useMutation({
+    mutationFn: async (data) => {
+      const doc = await db.get(profile._id);
+      const updatedDoc = {
+        ...doc,
+        ...data,
+      };
+      const res = await db.put(updatedDoc);
+      if (!res.ok) {
+        throw new Error('Failed to update profile');
+      }
+      return res;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Profile updated successfully',
+      });
+      setIsEdit(false);
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to update profile',
+        description: String(error),
+        variant: 'destructive',
+      });
+    },
+  });
+
+  useEffect(() => {
+    if (profile) {
+      form.reset(profile);
+    }
+  }, [form, profile]);
+
   const onSubmit = (data) => {
-    console.warn(data);
+    form.reset(data);
+    mutate(data);
   };
   const handleEdit = () => {
     setIsEdit(!isEdit);
@@ -71,7 +112,7 @@ function Profile() {
                         type="email"
                         placeholder="Please enter your email"
                         autoComplete="off"
-                        disabled={!isEdit}
+                        disabled
                         {...field}
                       />
                     </FormControl>
@@ -212,6 +253,6 @@ function Profile() {
       </CardFooter>
     </Card>
   );
-}
+});
 
 export default Profile;
